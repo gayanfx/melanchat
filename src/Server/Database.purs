@@ -24,12 +24,15 @@ newPool = DP.newPool $ (DP.defaultPoolConfiguration "melanchat") {
 }
 
 insert :: forall r query parameters value. ToSQLRow value => Query query parameters -> value -> BaseEffect { pool :: Pool | r } PrimaryKey
-insert query parameters = withConnection insertReturnID
-        where   addReturnID (Query text) = Query $ text <> " returning id"
+insert query parameters = withConnection (insertReturnID query parameters)
 
-                insertReturnID connection = do
-                        rows <- DP.scalar connection (addReturnID query) parameters
-                        pure $ PU.unsafePartial (DM.fromJust rows)
+insert' connection query parameters = insertReturnID query parameters connection
+
+insertReturnID query parameters connection = do
+        rows <- DP.scalar connection (addReturnID query) parameters
+        pure $ PU.unsafePartial (DM.fromJust rows)
+
+        where addReturnID (Query text) = Query $ text <> " returning id"
 
 scalar :: forall r query value. ToSQLRow query => FromSQLValue value => Query query (Row1 value) -> query -> BaseEffect { pool :: Pool | r } (Maybe value)
 scalar query parameters = withConnection $ \connection -> DP.scalar connection query parameters
@@ -67,3 +70,5 @@ withConnection :: forall r result. (Connection -> Aff result) -> BaseEffect { po
 withConnection runner = do
         { pool } <- RR.ask
         R.liftAff $ DP.withConnection pool runner
+
+withTransaction runner = withConnection $ \connection -> DP.withTransaction connection (runner connection)

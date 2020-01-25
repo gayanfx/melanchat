@@ -8,6 +8,7 @@ import Data.Argonaut.Decode (class DecodeJson)
 import Data.Argonaut.Decode.Generic.Rep as DADGR
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Argonaut.Encode.Generic.Rep as DAEGR
+import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Bifunctor as DB
 import Data.Date (Date)
 import Data.Date as DD
@@ -281,7 +282,9 @@ newtype WS = WS WebSocket
 
 newtype IMModel = IMModel {
         user :: IMUser,
-        suggestions :: Array IMUser,
+        suggestions :: NonEmptyArray IMUser,
+        suggesting :: Int,
+        contacts :: Array IMUser,
         chatting :: Maybe Int,
         webSocket :: Maybe WS,
         temporaryID :: Int,

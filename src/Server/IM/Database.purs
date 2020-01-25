@@ -6,7 +6,8 @@ import Shared.Types
 
 import Data.Int53 (Int53)
 import Data.Tuple.Nested ((/\))
-import Database.PostgreSQL (Query(..), Row1(..), Row3(..))
+import Database.PostgreSQL (Query(..), Row1(..), Row2(..), Row3(..))
+import Database.PostgreSQL as DP
 import Server.Database as SD
 
 presentationFields :: String
@@ -26,6 +27,8 @@ presentUser id =
 
 suggest :: Int53 -> ServerEffect (Array IMUser)
 suggest id =
-        SD.select (Query ("select " <> presentationFields <> " from users u where id not in (1, $1)")) <<< Row1 $ PrimaryKey id
+        SD.select (Query ("select " <> presentationFields <> " from users u where id not in (1, $1) and not exists(select 1 from histories where sender in ($1, u.id) and recipient in ($1, u.id))")) <<< Row1 $ PrimaryKey id
 
-insertMessage sender recipient content = SD.insert (Query """INSERT INTO messages(sender, recipient, content) VALUES ($1, $2, $3)""") (Row3 sender recipient content)
+insertMessage sender recipient content = SD.withTransaction $ \connection -> do
+        DP.execute connection (Query """select insertHistory($1, $2)""") (Row2 sender recipient)
+        SD.insert' connection (Query """INSERT INTO messages(sender, recipient, content) VALUES ($1, $2, $3)""") (Row3 sender recipient content)
