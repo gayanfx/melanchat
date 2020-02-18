@@ -62,6 +62,15 @@ tests = do
                             IMUser user = PU.unsafePartial (DM.fromJust (suggestions !! index))
 
                         TUA.equal [History {content}] user.history
+                
+                TU.test "startChat adds new contact from suggestion" $ do
+                        TUA.equal 1 2
+
+                TU.test "receiveMessage substitutes temporary id" $ do
+                        TUA.equal 1 2
+
+                TU.test "receiveMessage adds message to history" $ do
+                        TUA.equal 1 2        
 
         where   model = IMModel {
                         user: imUser,

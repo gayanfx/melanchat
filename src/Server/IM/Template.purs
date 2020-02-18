@@ -11,6 +11,7 @@ import Flame.HTML.Attribute as HA
 import Flame.HTML.Element as HE
 import Server.Template (defaultParameters)
 import Server.Template as ST
+import Shared.IM.View (contacts)
 import Shared.IM.View as SIV
 
 template :: Array IMUser -> IMUser -> Effect String
@@ -22,12 +23,14 @@ template suggestions user = do
         F.preMount (QuerySelector ".im") {
                 view: \model' -> ST.templateWith $ parameters { content = [SIV.view model'] },
                 init: IMModel {
+                        contacts: [],
                         suggestions,
                         user,
-                        chatting: Just 0,
+                        chatting: Nothing,
                         webSocket: Nothing,
                         token: Nothing,
-                        temporaryID : 0
+                        temporaryID : 0,
+                        suggesting: 0
                 }
         }
         where   javascript = [

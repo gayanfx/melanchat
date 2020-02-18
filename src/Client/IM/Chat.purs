@@ -1,7 +1,7 @@
 module Client.IM.Chat where
 
 import Client.Common
-import Client.Types
+import Client.Common.Types
 import Prelude
 import Shared.Types
 
@@ -36,9 +36,9 @@ update _ model =
 
 startChat :: IMModel -> Aff IMModel
 startChat immodel@(IMModel model@{chatting, contacts, suggesting, suggestions}) =
-        pure <<< case chatting of
+        pure $ case chatting of
                         Nothing ->
-                                let chatted = PU.unsafePartial (DM.fromJust $ DAN.index suggestions suggesting)
+                                let chatted = PU.unsafePartial (DM.fromJust $ DA.index suggestions suggesting)
                                 in IMModel $ model {
                                         chatting = Just 0,
                                         contacts = DA.cons chatted contacts
@@ -51,7 +51,7 @@ sendMessage webSocketHandler (IMModel model@{webSocket: Just (WS webSocket), tok
                 newTemporaryID = temporaryID + 1
                 updatedChatting = IMUser $ user {
                         message = "",
-                        history = DA.snoc user.history $ History { content }
+                        history = DA.snoc user.history $ History { id: PrimaryKey $ DI.fromInt newTemporaryID, content }
                 }
         liftEffect <<< webSocketHandler.sendString webSocket <<< SJ.toJSON $ Message {
                 id: PrimaryKey $ DI.fromInt newTemporaryID,
@@ -68,9 +68,29 @@ sendMessage _ model _ = do
         pure model
 
 receiveMessage :: IMModel -> WebSocketPayload -> Aff IMModel
-receiveMessage (IMModel model@{contacts}) payload = do
+receiveMessage m@(IMModel model@{contacts}) payload = do
         case payload of
-                Message { id, user, content } -> liftEffect $ EC.log content
-                Received { previousID, id } -> liftEffect $ EC.log "received id"
-                e -> liftEffect <<< EC.log $ "bogus payload " <> show e
-        pure model
+                Message { id, user, content } -> do 
+                        liftEffect $ EC.log content
+                        pure m
+                Received { previousID, id } -> pure <<< IMModel $ model {
+                        contacts = DM.fromMaybe contacts $ updateContacts previousID id
+                }
+                e -> do 
+                        liftEffect <<< EC.log $ "bogus payload " <> show e
+                        pure m
+
+        where   findTemporary previousID (History { id }) = id == previousID
+                findUser previousID (IMUser {history}) = DA.any (findTemporary previousID) history
+
+                updateTemporary index newID (IMUser user@{history}) = IMUser $ user {
+                        history = PU.unsafePartial (DM.fromJust $ DA.modifyAt index (\(History history) -> History $ history {
+                                id = newID
+                        }) history)
+                }
+                updateContacts previousID id = do 
+                        index <- DA.findIndex (findUser previousID) contacts
+                        IMUser {history} <- contacts !! index
+                        innerIndex <- DA.findIndex (findTemporary previousID) history                        
+
+                        DA.modifyAt index (updateTemporary innerIndex id) contacts

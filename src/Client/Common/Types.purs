@@ -1,4 +1,4 @@
-module Client.Types where
+module Client.Common.Types where
 
 import Effect (Effect)
 import Prelude

@@ -11,6 +11,7 @@ import Effect (Effect)
 import Flame (QuerySelector(..), Html)
 import Flame as F
 import Flame.HTML.Attribute as HA
+import Debug.Trace (spy)
 import Flame.HTML.Element as HE
 
 view :: IMModel -> Html IMMessage
@@ -105,9 +106,10 @@ history :: IMModel -> Html IMMessage
 history model = HE.div' (HA.class' "message-history")
 
 chat :: IMModel -> Html IMMessage
-chat model =
+chat (IMModel {chatting, suggestions}) =
         HE.div (HA.class' "send-box") $
-                HE.div (HA.class' "chat-input-textarea-options") $
+                let classes = "chat-input-textarea-options" <> if DM.isNothing chatting && DA.length suggestions == 0 then " hidden" else "" 
+                 in HE.div (HA.class' classes) $
                         HE.textarea' [HA.class' "chat-input-textarea", HA.placeholder "Type a message or drag files here"]
 
 search model = HE.div' $ HA.class' "search"
