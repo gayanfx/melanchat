@@ -1,6 +1,6 @@
 module Test.Client.IM.Chat where
 
-import Client.Types
+import Client.Common.Types
 import Prelude
 import Shared.Types
 
@@ -61,7 +61,7 @@ tests = do
                         let index = PU.unsafePartial $ DM.fromJust chatting
                             IMUser user = PU.unsafePartial (DM.fromJust (suggestions !! index))
 
-                        TUA.equal [History {content}] user.history
+                        TUA.equal [History {id: PrimaryKey $ DI.fromInt 1, content}] user.history
                 
                 TU.test "startChat adds new contact from suggestion" $ do
                         TUA.equal 1 2
@@ -76,7 +76,9 @@ tests = do
                         user: imUser,
                         suggestions: [imUser],
                         temporaryID : 0,
+                        suggesting: 0,
                         token: Just "",
+                        contacts: [],
                         webSocket: Just $ WS (UC.unsafeCoerce 23 :: WebSocket),
                         chatting: Just 0
                 }

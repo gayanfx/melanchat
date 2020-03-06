@@ -51,11 +51,13 @@ tests = do
                         updatedModel <- CIS.update world (updateModel (\m -> m { suggestions = [imUser, imUser], chatting = Just 0 })) NextSuggestion
                         TUA.equal (updateModel (\m -> m { chatting = Just 1, suggestions = [imUser, imUser] })) updatedModel
         where   model = IMModel {
+                        contacts: [],
                         user: imUser,
                         suggestions: [],
                         temporaryID : 0,
                         token: Nothing,
                         webSocket: Nothing,
+                        suggesting: 0,
                         chatting: Nothing
                 }
 
